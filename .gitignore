@@ -1,0 +1,17 @@
+# Compiled Java Classes
+bin/
+*.class
+
+# Embedded local database storage
+data/
+
+# Uploaded runtime files
+uploads/*
+!uploads/.gitkeep
+
+# Temporary build artifacts
+sources.txt
+*.log
+.metadata/
+.DS_Store
+Thumbs.db
