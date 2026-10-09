@@ -9,15 +9,15 @@ import com.airesearchhub.dao.ExperimentDaoImpl;
 import com.airesearchhub.dao.ProjectDao;
 import com.airesearchhub.dao.ProjectDaoImpl;
 import com.airesearchhub.dto.AssistantRequestDto;
-import com.airesearchhub.ml.DataFrame;
 import com.airesearchhub.model.entity.ChatMessage;
 import com.airesearchhub.model.entity.Dataset;
 import com.airesearchhub.model.entity.Experiment;
 import com.airesearchhub.model.entity.Project;
 import com.airesearchhub.model.entity.User;
-import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class AssistantService {
@@ -48,22 +48,75 @@ public class AssistantService {
 
         String userMsg = req.getMessage() != null ? req.getMessage().trim() : "";
 
-        // Save user message
+        // 1. Save user message
         chatDao.save(new ChatMessage(convId, user.getId(), "user", userMsg));
 
-        // Generate intelligent contextual response
-        String aiResponseText = generateResponse(req, user);
+        // 2. Fetch history for conversation context
+        List<ChatMessage> existing = chatDao.findByConversationId(convId);
+        List<Map<String, String>> historyList = new ArrayList<>();
+        for (ChatMessage m : existing) {
+            Map<String, String> map = new HashMap<>();
+            map.put("role", m.getSenderRole());
+            map.put("content", m.getContent());
+            historyList.add(map);
+        }
 
-        // Save assistant message
+        // 3. Build workspace context (datasets, projects, experiments)
+        String contextPrompt = buildWorkspaceContext(req, user);
+
+        // 4. Attempt real Free AI API generation
+        String aiResponseText = null;
+        try {
+            aiResponseText = FreeAiClient.generateResponse(historyList, contextPrompt);
+        } catch (Exception e) {
+            System.err.println("[FreeAiClient Warning] Real AI API request failed: " + e.getMessage() + ". Falling back to local ML reasoning engine.");
+            aiResponseText = generateOfflineFallbackResponse(req, user);
+        }
+
+        if (aiResponseText == null || aiResponseText.trim().isEmpty()) {
+            aiResponseText = generateOfflineFallbackResponse(req, user);
+        }
+
+        // 5. Save and return assistant message
         ChatMessage assistantMsg = new ChatMessage(convId, user.getId(), "assistant", aiResponseText);
         return chatDao.save(assistantMsg);
     }
 
-    private String generateResponse(AssistantRequestDto req, User user) {
+    private String buildWorkspaceContext(AssistantRequestDto req, User user) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Current User: ").append(user.getFullName()).append(" (Role: ").append(user.getRole()).append(")\n");
+
+        if (req.getDatasetId() != null) {
+            datasetDao.findById(req.getDatasetId()).ifPresent(d -> {
+                sb.append("Active Dataset: ").append(d.getName())
+                  .append(" (").append(d.getRowCount()).append(" rows, ")
+                  .append(d.getColumnCount()).append(" columns)\n");
+            });
+        }
+
+        if (req.getProjectId() != null) {
+            projectDao.findById(req.getProjectId()).ifPresent(p -> {
+                sb.append("Active Project: ").append(p.getTitle())
+                  .append(" - ").append(p.getDescription()).append("\n");
+            });
+        }
+
+        List<Dataset> recentDatasets = datasetDao.findAll();
+        if (!recentDatasets.isEmpty()) {
+            sb.append("Available Workspace Datasets: ");
+            for (int i = 0; i < Math.min(3, recentDatasets.size()); i++) {
+                sb.append(recentDatasets.get(i).getName()).append(" (").append(recentDatasets.get(i).getRowCount()).append(" rows), ");
+            }
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private String generateOfflineFallbackResponse(AssistantRequestDto req, User user) {
         String query = req.getMessage() != null ? req.getMessage().toLowerCase() : "";
         String actionType = req.getActionType() != null ? req.getActionType().toUpperCase() : "CHAT";
 
-        // Check for specific action templates
         if ("EXPLAIN_ALGORITHM".equals(actionType) || query.contains("explain") || query.contains("algorithm")) {
             return getAlgorithmExplanation(query);
         } else if ("SUGGEST_ALGORITHM".equals(actionType) || query.contains("suggest") || query.contains("recommend")) {

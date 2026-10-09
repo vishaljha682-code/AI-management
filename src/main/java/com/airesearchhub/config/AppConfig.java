@@ -18,8 +18,9 @@ public class AppConfig {
         properties.setProperty("db.mysql.password", "");
         properties.setProperty("jwt.secret", "ai_researchhub_super_secret_jwt_key_2026_xyz");
         properties.setProperty("upload.dir", "uploads");
+        properties.setProperty("ai.provider", "free"); // 'free' (Pollinations.ai), 'gemini', 'groq', 'openai', 'offline'
         properties.setProperty("ai.api.key", ""); // Optional external LLM API key
-        properties.setProperty("ai.model", "gpt-4o-mini");
+        properties.setProperty("ai.model", "openai");
 
         // Load from .env or application.properties if exists
         File propFile = new File("application.properties");

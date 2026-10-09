@@ -1306,6 +1306,12 @@ const App = {
           <h2>AI Research Assistant & Machine Learning Copilot</h2>
           <p>Consult with your research assistant on dataset algorithms, starter code, hypothesis formulation, and metric evaluation.</p>
         </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-success" style="padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite;"></span>
+            ✨ Live Free AI API Active (Pollinations.ai / Gemini)
+          </span>
+        </div>
       </div>
 
       <div class="card chat-container">
@@ -1315,7 +1321,7 @@ const App = {
           <div class="chat-pill" onclick="App.sendAssistantPrompt('Explain Random Forest and how it avoids overfitting', 'EXPLAIN_ALGORITHM')">🌲 Explain Random Forest</div>
           <div class="chat-pill" onclick="App.sendAssistantPrompt('Generate starter Python and Java training pipeline code', 'CODE_STARTER')">💻 Starter ML Code</div>
           <div class="chat-pill" onclick="App.sendAssistantPrompt('Explain accuracy, precision, recall, and F1-score', 'EXPLAIN_EXPERIMENT')">📊 Explain Metrics</div>
-          <div class="chat-pill" onclick="App.sendAssistantPrompt('Summarize key findings of the research paper methodology', 'SUMMARIZE_DOC')">📄 Summarize Research Paper</div>
+          <div class="chat-pill" onclick="App.sendAssistantPrompt('Summarize key findings of the research paper methodology', 'SUMMARIZE_DOC')">📄 Summarize Paper</div>
         </div>
 
         <!-- Chat Message Log -->
